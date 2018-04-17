@@ -1,0 +1,155 @@
+﻿@model GameResponseViewModel
+@{
+    ViewData["Title"] = "TicTacToeResults";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Tic-Tac-Toe Match Result</h2><span id="status" style="float:right;"></span>
+<canvas id="ticTacToeCanvas" width="300" height="300"></canvas>
+<a asp-controller="Match" asp-action="Index" class="btn btn-block btn-secondary">Back</a>
+
+<script>
+
+    /************************************************************************************
+     global variables
+    ************************************************************************************/
+
+    var _ticTacToeCanvas = document.getElementById("ticTacToeCanvas");
+    var _context = ticTacToeCanvas.getContext("2d");
+
+    var _sequence = [@string.Join(",",Model.Sequence)];
+
+    var _winningSequence = [@string.Join(",",Model.WinningSequence)];
+
+    $("#status").text('@Model.Info');
+
+    drawBoard(_context);
+
+
+    /************************************************************************************
+     functions
+    ************************************************************************************/
+
+    function drawBoard(context) {
+
+        context.save();
+
+        context.clearRect(0, 0, 300, 300);
+
+        context.beginPath();
+
+        context.strokeStyle = '#000000';
+        context.lineWidth = 2;
+        context.moveTo(100, 0);
+        context.lineTo(100, 300);
+        context.moveTo(200, 0);
+        context.lineTo(200, 300);
+        context.moveTo(0, 100);
+        context.lineTo(300, 100);
+        context.moveTo(0, 200);
+        context.lineTo(300, 200);
+
+        context.closePath();
+
+        context.stroke();
+
+        context.restore();
+    }
+
+    function drawX(square, context, winner) {
+
+        var xOffset = (square % 3) * 100;
+        var yOffset = Math.floor(square / 3) * 100;
+
+        context.save();
+
+        context.beginPath();
+
+        if (winner) {
+            context.strokeStyle = '#00FF00';
+        }
+        else {
+            context.strokeStyle = '#000000';
+        }
+
+        context.lineWidth = 4;
+
+        context.moveTo(6 + xOffset, 6 + yOffset);
+        context.lineTo(94 + xOffset, 94 + yOffset);
+        context.moveTo(94 + xOffset, 6 + yOffset);
+        context.lineTo(6 + xOffset, 94 + yOffset);
+
+        context.closePath();
+
+        context.stroke();
+
+        context.restore();
+    }
+
+    function drawO(square, context, winner) {
+
+        var xOffset = (square % 3) * 100;
+        var yOffset = Math.floor(square / 3) * 100;
+
+        context.save();
+
+        context.beginPath();
+
+        if (winner) {
+            context.strokeStyle = '#00FF00';
+        }
+        else {
+            context.strokeStyle = '#000000';
+        }
+
+        context.lineWidth = 1;
+
+        context.arc(50 + xOffset, 50 + yOffset, 44, 0, Math.PI * 2, false);
+        context.arc(50 + xOffset, 50 + yOffset, 40, 0, Math.PI * 2, true);
+        context.fill();
+
+        context.closePath();
+
+        context.stroke();
+
+        context.restore();
+    }
+
+    var i = 0;
+
+    function draw(m) {
+        if ((i % 2) == 0)
+            drawX(_sequence[i], _context, false);
+        else
+            drawO(_sequence[i], _context, false);
+
+        if (i < _sequence.length) {
+            wait(2000);
+            i++;
+            window.requestAnimationFrame(draw);
+        }
+        else {
+            for (var j = 0; j < _winningSequence.length; j++) {
+                if (@Model.WinningWentFirst.ToString().ToLower())
+                    drawX(_winningSequence[j], _context, true);
+                else
+                    drawO(_winningSequence[j], _context, true);
+            }
+
+            $("#status").text('@Model.Winner')
+        }
+    }
+
+    function wait(ms) {
+        var start = new Date().getTime();
+        var end = start;
+        while (end < start + ms) {
+            end = new Date().getTime();
+        }
+    }
+
+    window.onload = draw;
+</script>
+
+
+

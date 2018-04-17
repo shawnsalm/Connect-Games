@@ -1,0 +1,73 @@
+﻿@model MatchesViewModel
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div>
+    <center><h2>Available Opponents</h2></center>
+
+    <row>
+
+        <div class="col-lg-6">
+            <h3>Tic-Tac-Toe</h3>
+            <center><h4>Your student's record: @Model.TicTacToeRecord</h4></center>
+            <form asp-controller="Match" asp-action="ToggleTicTacToeEnable" method="post" class="form-horizontal" role="form">
+                <input type="submit" class="btn btn-primary" value="@(Model.EnableTicTacToe ? "Disable" : "Enable")" />
+            </form>
+            <br />
+            @if (Model.EnableTicTacToe)
+            {
+                <table width="100%">
+                    <tr>
+                        <td><b>User Name</b></td>
+                        <td></td>
+                    </tr>
+                    @foreach (var ticTacToePlayerStat in Model.TicTacToePlayerStats)
+                    {
+                        <tr>
+                            <td>@ticTacToePlayerStat.UserName (@ticTacToePlayerStat.Wins , @ticTacToePlayerStat.Losses)</td>
+                            <td>
+                                <form asp-controller="Match" asp-action="PlayTicTacToeMatch" method="post" class="form-horizontal" role="form">
+                                    <input type="hidden" value="@ticTacToePlayerStat.PlayerId" id="playerId" name="playerId" />
+                                    <input type="submit" class="btn btn-primary" value="Play" />
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </table>
+            }
+        </div>
+        <div class="col-lg-6">
+            <h3>Connect Four</h3>
+            <center><h4>Your student's record: @Model.ConnectFourRecord</h4></center>
+            <form asp-controller="Match" asp-action="ToggleConnectFourEnable" method="post" class="form-horizontal" role="form">
+                <input type="submit" class="btn btn-primary" value="@(Model.EnableConnectFour ? "Disable" : "Enable")" />
+            </form>
+            <br />
+            @if (Model.EnableConnectFour)
+            {
+                <table width="100%">
+                    <tr>
+                        <td><b>User Name</b></td>
+                        <td></td>
+                    </tr>
+                    @foreach (var connectFourPlayerStat in Model.ConnectFourPlayerStats)
+                    {
+                        <tr>
+                            <td>@connectFourPlayerStat.UserName (@connectFourPlayerStat.Wins , @connectFourPlayerStat.Losses)</td>
+                            <td>
+                                <form asp-controller="Match" asp-action="PlayConnectFourMatch" method="post" class="form-horizontal" role="form">
+                                    <input type="hidden" value="@connectFourPlayerStat.PlayerId" id="playerId" name="playerId" />
+                                    <input type="submit" class="btn btn-primary" value="Play" />
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </table>
+            }
+        </div>
+
+    </row>
+</div>

@@ -1,0 +1,52 @@
+﻿@model MatchesViewModel
+@{
+    ViewData["Title"] = "Home";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div>Hi @ViewData["CurrentUser"]</div>
+<div class="row">
+    <div class="col-lg-3">
+        <a asp-controller="Game" asp-action="TicTacToe" class="btn btn-block btn-secondary">Tic-Tac-Toe</a>
+        <a asp-controller="Game" asp-action="ConnectFour" class="btn btn-block btn-secondary">Connect Four</a>
+        <a asp-controller="Match" asp-action="Index" class="btn btn-block btn-secondary">Matches</a>
+    </div>
+    <div class="col-lg-6">
+        <p>Connect-Games allows one to teach a simulated computer student how to win at games such as Tic-Tac-Toe and Connect Four simply as playing as an opponent.  The user will then be able to measure the computer student’s progress as it plays against other people’s taught computer students.  In this way, one will get the convenience of playing against a computer while at the same time, the satisfaction of a computer student winning against another person’s computer student.  Once a person feels that a student is ready to engage other students, the user must be able to make the computer student available to play anyone else’s student who has been made available.</p>
+    </div>
+    <div class="col-lg-3">
+        <h4>Top Players - Tic-Tac-Toe</h4>
+        <table width="100%">
+            <tr>
+                <td><b>User Name</b></td>
+                <td><b>Wins</b></td>
+                <td><b>Losses</b></td>
+            </tr>
+            @foreach (var ticTacToePlayerStat in Model.TicTacToePlayerStats)
+            {
+                <tr>
+                    <td>@ticTacToePlayerStat.UserName</td>
+                    <td>@ticTacToePlayerStat.Wins</td>
+                    <td>@ticTacToePlayerStat.Losses</td>
+                </tr>
+            }
+        </table>
+        <br />
+        <br />
+        <h4>Top Players - Connect Four</h4>
+        <table width="100%">
+            <tr>
+                <td><b>User Name</b></td>
+                <td><b>Wins</b></td>
+                <td><b>Losses</b></td>
+            </tr>
+            @foreach (var connectFourPlayerStat in Model.ConnectFourPlayerStats)
+            {
+                <tr>
+                    <td>@connectFourPlayerStat.UserName</td>
+                    <td>@connectFourPlayerStat.Wins</td>
+                    <td>@connectFourPlayerStat.Losses</td>
+                </tr>
+            }
+        </table>
+    </div>
+</div>

@@ -1,0 +1,226 @@
+﻿
+@{
+    ViewData["Title"] = "ConnectFour";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Connect Four</h2> <span id="status" style="float:right;"></span>
+<canvas id="connectFourCanvas" width="350" height="300"></canvas>
+<br />
+<br />
+<button type="button" id="btnNewGameStartFirst">New Game Start First</button>
+<button type="button" id="btnNewGameStartSecond">New Game Start Second</button>
+
+
+<script>
+
+    /************************************************************************************
+     global variables
+    ************************************************************************************/
+
+    var _connectFourCanvas = document.getElementById("connectFourCanvas");
+    var _context = connectFourCanvas.getContext("2d");
+
+    var _sequence = [];
+
+    var _connectFourCanvasEnabled = false;
+
+    var _playerGoesFirst = true;
+
+    drawBoard(_context);
+    
+    /************************************************************************************
+     event handlers
+    ************************************************************************************/
+
+    _connectFourCanvas.onmouseup = function (e) {
+
+        if (_connectFourCanvasEnabled) {
+            var location = windowToCanvas(e.clientX, e.clientY);
+            var blockClickedOn = convertCoordinatesToSquare(location.x, location.y);
+            
+            if (blockClickedOn != -1) {
+
+                _connectFourCanvasEnabled = false;
+
+                if (_playerGoesFirst) {
+                    drawBlackPiece(blockClickedOn, _context);
+                }
+                else {
+                    drawRedPiece(blockClickedOn, _context);
+                }
+
+                _sequence.push(blockClickedOn);
+
+                $("#status").text("Student's move");
+
+                callServer();
+            }
+        }
+    }
+
+    $("#btnNewGameStartFirst").click(function () {
+        _sequence = [];
+        drawBoard(_context);
+        _connectFourCanvasEnabled = true;
+        _playerGoesFirst = true;
+        $("#status").text("Player's move");
+    });
+
+    $("#btnNewGameStartSecond").click(function () {
+        _sequence = [];
+        drawBoard(_context);
+        _connectFourCanvasEnabled = false;
+        _playerGoesFirst = false;
+        $("#status").text("Student's move");
+        callServer();
+    });
+
+    /************************************************************************************
+     functions
+    ************************************************************************************/
+
+    function windowToCanvas(x, y) {
+        var bbox = _connectFourCanvas.getBoundingClientRect();
+        return {
+            x: x - bbox.left * (_connectFourCanvas.width / bbox.width),
+            y: y - bbox.top * (_connectFourCanvas.height / bbox.height)
+        };
+    }
+
+    function convertCoordinatesToSquare(x, y) {
+               
+        var col = Math.trunc((x / 50.0));
+
+        var index = -1;
+        
+        for (var i = col + (7 * 5); i > -1; i -= 7) {
+            var blocked = false;
+            for (var j = 0; j < _sequence.length; j++) {
+                if (_sequence[j] == i) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (!blocked) {
+                index = i;
+                break;
+            }
+        }
+
+        console.log(index);
+
+        return index; 
+    }
+
+    function drawBlackPiece(square, context, winner) {
+        drawPiece(square, context, "black", winner);
+    }
+
+    function drawRedPiece(square, context, winner) {
+        drawPiece(square, context, "red", winner);
+    }
+
+    function drawPiece(square, context, color, winner) {
+
+        var xOffset = (square % 7) * 50;
+        var yOffset = (Math.floor(square / 7) * 50);
+        
+        context.save();
+
+        context.beginPath();
+
+        if (winner) {
+            context.fillStyle = '#00FF00';
+        }
+        else {
+            context.fillStyle = color;
+        }
+
+        context.strokeStyle = color;
+
+        context.lineWidth = 1;
+
+        context.arc(25 + xOffset, 25 + yOffset, 22, 0, Math.PI * 2, false);
+
+        context.closePath();
+
+        context.fill();
+
+        context.stroke();
+
+        context.restore();
+    }
+
+    function drawBoard(context) {
+
+        context.save();
+
+        context.clearRect(0, 0, 350, 300);
+
+        context.beginPath();
+
+        context.strokeStyle = '#000000';
+        context.lineWidth = 2;
+
+        for (var x = 0; x < 9; x++) {
+            context.moveTo(x * 50, 0);
+            context.lineTo(x * 50, 300);
+        }
+
+        for (var y = 0; y < 9; y++) {
+            context.moveTo(0, y * 50);
+            context.lineTo(350, y * 50);
+        }
+        
+        context.closePath();
+
+        context.stroke();
+
+        context.restore();
+    }
+
+    function callServer() {
+        $.ajax({
+            url: "/api/ConnectFour",
+            contentType: "application/json",
+            method: "POST",
+            data: JSON.stringify({
+                Sequence: _sequence,
+                DoesPlayerGoFirst: _playerGoesFirst
+            }),
+            success: function (data) {
+                console.log(data.computerMove);
+                if (data.computerMove != -1) {
+                    if (_playerGoesFirst) {
+                        drawRedPiece(data.computerMove, _context);
+                    }
+                    else {
+                        drawBlackPiece(data.computerMove, _context);
+                    }
+                }
+
+                if (!data.isGameFinsihed) {
+                    _connectFourCanvasEnabled = true;
+                    _sequence = data.sequence;
+                    $("#status").text("Player's move");
+                }
+                else {
+                    $("#status").text(data.winner);
+
+                    if (data.winningSequence != null) {
+                        for (var i = 0; i < data.winningSequence.length; i++) {
+                            if (_playerGoesFirst && data.winner == "You Win" ||
+                                !_playerGoesFirst) {
+                                drawBlackPiece(data.winningSequence[i], _context, true);
+                            }
+                            else {
+                                drawRedPiece(data.winningSequence[i], _context, true);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>

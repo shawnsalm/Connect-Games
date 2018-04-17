@@ -1,0 +1,136 @@
+﻿@model GameResponseViewModel
+@{
+    ViewData["Title"] = "ConnectFourResults";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Connect Four Match Result</h2><span id="status" style="float:right;"></span>
+<canvas id="connectFourCanvas" width="350" height="300"></canvas>
+<a asp-controller="Match" asp-action="Index" class="btn btn-block btn-secondary">Back</a>
+
+<script>
+
+    /************************************************************************************
+     global variables
+    ************************************************************************************/
+
+    var _connectFourCanvas = document.getElementById("connectFourCanvas");
+    var _context = connectFourCanvas.getContext("2d");
+
+    var _sequence = [@string.Join(",",Model.Sequence)];
+
+    var _winningSequence = [@string.Join(",",Model.WinningSequence)];
+
+    $("#status").text('@Model.Info');
+
+    drawBoard(_context);
+
+
+    /************************************************************************************
+     functions
+    ************************************************************************************/
+
+    function drawBoard(context) {
+
+        context.save();
+
+        context.clearRect(0, 0, 350, 300);
+
+        context.beginPath();
+
+        context.strokeStyle = '#000000';
+        context.lineWidth = 2;
+
+        for (var x = 0; x < 9; x++) {
+            context.moveTo(x * 50, 0);
+            context.lineTo(x * 50, 300);
+        }
+
+        for (var y = 0; y < 9; y++) {
+            context.moveTo(0, y * 50);
+            context.lineTo(350, y * 50);
+        }
+
+        context.closePath();
+
+        context.stroke();
+
+        context.restore();
+    }
+
+    function drawBlackPiece(square, context, winner) {
+        drawPiece(square, context, "black", winner);
+    }
+
+    function drawRedPiece(square, context, winner) {
+        drawPiece(square, context, "red", winner);
+    }
+
+    function drawPiece(square, context, color, winner) {
+
+        var xOffset = (square % 7) * 50;
+        var yOffset = (Math.floor(square / 7) * 50);
+
+        context.save();
+
+        context.beginPath();
+
+        if (winner) {
+            context.fillStyle = '#00FF00';
+        }
+        else {
+            context.fillStyle = color;
+        }
+
+        context.strokeStyle = color;
+
+        context.lineWidth = 1;
+
+        context.arc(25 + xOffset, 25 + yOffset, 22, 0, Math.PI * 2, false);
+
+        context.closePath();
+
+        context.fill();
+        context.stroke();
+
+        context.restore();
+    }
+
+    var i = 0;
+
+    function draw(m) {
+        if ((i % 2) == 0)
+            drawBlackPiece(_sequence[i], _context, false);
+        else
+            drawRedPiece(_sequence[i], _context, false);
+
+        if (i < _sequence.length) {
+            wait(1000);
+            i++;
+            window.requestAnimationFrame(draw);
+        }
+        else {
+            for (var j = 0; j < _winningSequence.length; j++) {
+                if (@Model.WinningWentFirst.ToString().ToLower())
+                    drawBlackPiece(_winningSequence[j], _context, true);
+                else
+                    drawRedPiece(_winningSequence[j], _context, true);
+            }
+
+            $("#status").text('@Model.Winner')
+        }
+    }
+
+    function wait(ms) {
+        var start = new Date().getTime();
+        var end = start;
+        while (end < start + ms) {
+            end = new Date().getTime();
+        }
+    }
+
+    window.onload = draw;
+</script>
+
+
+

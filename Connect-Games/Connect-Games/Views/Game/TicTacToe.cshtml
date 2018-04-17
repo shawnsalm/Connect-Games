@@ -1,0 +1,236 @@
+﻿
+@{
+    ViewData["Title"] = "TicTacToe";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Tic-Tac-Toe</h2>  <span id="status" style="float:right;"></span>
+<canvas id="ticTacToeCanvas" width="300" height="300"></canvas>
+
+<br />
+<br />
+<button id="btnNewGameStartFirst" type="button">New Game Start First</button>
+<button id="btnNewGameStartSecond" type="button">New Game Start Second</button>
+
+
+<script>
+
+    /************************************************************************************
+     global variables
+    ************************************************************************************/
+
+    var _ticTacToeCanvas = document.getElementById("ticTacToeCanvas");
+    var _context = ticTacToeCanvas.getContext("2d");
+
+    var _sequence = [];
+
+    var _ticTacToeCanvasEnabled = false;
+
+    var _playerGoesFirst = true;
+
+    drawBoard(_context);
+
+    /************************************************************************************
+     event handlers
+    ************************************************************************************/
+
+    _ticTacToeCanvas.onmouseup = function (e) {
+
+        if (_ticTacToeCanvasEnabled) {
+            var location = windowToCanvas(e.clientX, e.clientY);
+            var blockClickedOn = convertCoordinatesToSquare(location.x, location.y);
+            var blockFree = true;
+
+            for (var i = 0; i < _sequence.length; i++) {
+                if (_sequence[i] == blockClickedOn) {
+                    blockFree = false;
+                    break;
+                }
+            }
+
+            if (blockFree) {
+
+                _ticTacToeCanvasEnabled = false;
+
+                if (_playerGoesFirst) {
+                    drawX(blockClickedOn, _context);
+                }
+                else {
+                    drawO(blockClickedOn, _context);
+                }
+
+                _sequence.push(blockClickedOn);
+
+                $("#status").text("Student's move");
+
+                callServer();
+            }
+        }
+    }
+
+    $("#btnNewGameStartFirst").click(function () {
+        _sequence = [];
+        drawBoard(_context);
+        _ticTacToeCanvasEnabled = true;
+        _playerGoesFirst = true;
+        $("#status").text("Player's move");
+    });
+
+    $("#btnNewGameStartSecond").click(function () {
+        _sequence = [];
+        drawBoard(_context);
+        _ticTacToeCanvasEnabled = false;
+        _playerGoesFirst = false;
+        $("#status").text("Student's move");
+        callServer();
+    });
+
+
+
+    /************************************************************************************
+     functions
+    ************************************************************************************/
+
+    function windowToCanvas(x, y) {
+        var bbox = _ticTacToeCanvas.getBoundingClientRect();
+        return {
+            x: x - bbox.left * (_ticTacToeCanvas.width / bbox.width),
+            y: y - bbox.top * (_ticTacToeCanvas.height / bbox.height)
+        };
+    }
+
+    function convertCoordinatesToSquare(x, y) {
+        return Math.trunc((x / 100.0)) + (Math.trunc((y / 100.0)) * 3);
+    }
+
+    function drawBoard(context) {
+
+        context.save();
+
+        context.clearRect(0, 0, 300, 300);
+
+        context.beginPath();
+
+        context.strokeStyle = '#000000';
+        context.lineWidth = 2;
+        context.moveTo(100, 0);
+        context.lineTo(100, 300);
+        context.moveTo(200, 0);
+        context.lineTo(200, 300);
+        context.moveTo(0, 100);
+        context.lineTo(300, 100);
+        context.moveTo(0, 200);
+        context.lineTo(300, 200);
+
+        context.closePath();
+
+        context.stroke();
+
+        context.restore();
+    }
+
+    function drawX(square, context, winner) {
+
+        var xOffset = (square % 3) * 100;
+        var yOffset = Math.floor(square / 3) * 100;
+
+        context.save();
+
+        context.beginPath();
+
+        if (winner) {
+            context.strokeStyle = '#00FF00';
+        }
+        else {
+            context.strokeStyle = '#000000';
+        }
+
+        context.lineWidth = 4;
+
+        context.moveTo(6 + xOffset, 6 + yOffset);
+        context.lineTo(94 + xOffset, 94 + yOffset);
+        context.moveTo(94 + xOffset, 6 + yOffset);
+        context.lineTo(6 + xOffset, 94 + yOffset);
+
+        context.closePath();
+
+        context.stroke();
+
+        context.restore();
+    }
+
+    function drawO(square, context, winner) {
+
+        var xOffset = (square % 3) * 100;
+        var yOffset = Math.floor(square / 3) * 100;
+
+        context.save();
+
+        context.beginPath();
+
+        if (winner) {
+            context.strokeStyle = '#00FF00';
+        }
+        else {
+            context.strokeStyle = '#000000';
+        }
+
+        context.lineWidth = 1;
+
+        context.arc(50 + xOffset, 50 + yOffset, 44, 0, Math.PI * 2, false);
+        context.arc(50 + xOffset, 50 + yOffset, 40, 0, Math.PI * 2, true);
+        context.fill();
+
+        context.closePath();
+
+        context.stroke();
+
+        context.restore();
+    }
+
+    function callServer() {
+        $.ajax({
+            url: "/api/TicTacToe",
+            contentType: "application/json",
+            method: "POST",
+            data: JSON.stringify({
+                Sequence: _sequence,
+                DoesPlayerGoFirst: _playerGoesFirst
+            }),
+            success: function (data) {
+
+                if (data.computerMove != -1) {
+                    if (_playerGoesFirst) {
+                        drawO(data.computerMove, _context);
+                    }
+                    else {
+                        drawX(data.computerMove, _context);
+                    }
+                }
+
+                if (!data.isGameFinsihed) {
+                    _ticTacToeCanvasEnabled = true;
+                    _sequence = data.sequence;
+                    $("#status").text("Player's move");
+                }
+                else {
+                    $("#status").text(data.winner);
+
+                    if (data.winningSequence != null) {
+                        for (var i = 0; i < data.winningSequence.length; i++) {
+                            if (_playerGoesFirst && data.winner == "You Win" ||
+                                !_playerGoesFirst) {
+                                drawX(data.winningSequence[i], _context, true);
+                            }
+                            else {
+                                drawO(data.winningSequence[i], _context, true);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+</script>
+
