@@ -80,8 +80,57 @@ namespace Connect_Games.DomainModels.AI
             }
 
             // randomly pick a move
-            return CalculateRandomMove(availableMoves);
+            nextMove = CalculateRandomMove(availableMoves);
 
+            List<int> tempAvailableMoves = availableMoves.ToList();
+
+            int? tempNextMove = null;
+            int? currentNextMove = nextMove;
+
+            while (tempAvailableMoves.Count > 0)
+            {
+                tempAvailableMoves.Remove(currentNextMove.Value);
+
+                // see if this move will help the opp.
+                List<List<int>> tempAllPlayersMoves = new List<List<int>>();
+
+                foreach(var moves in allPlayersMoves)
+                {
+                    tempAllPlayersMoves.Add(moves.ToList());
+                }
+
+                tempAllPlayersMoves[_computerPlayerIndex].Add(currentNextMove.Value);
+
+                var temp2AvailableMoves = _moveBehavior.GetAvailableMoves(tempAllPlayersMoves.SelectMany(t => t));
+
+                int computerPlayerIndex = _computerPlayerIndex == 0 ? 1 : 0;
+
+                tempNextMove = CalculateWinningMove(tempAllPlayersMoves[computerPlayerIndex], temp2AvailableMoves);
+
+                if(tempNextMove == null)
+                {
+                    break;
+                }
+
+                if(tempAvailableMoves.Count == 0)
+                {
+                    break;
+                }
+
+                tempNextMove = tempAvailableMoves.First();
+
+                if(tempNextMove == null)
+                {
+                    break;
+                }
+                else
+                {
+                    currentNextMove = tempNextMove;
+                }
+            }
+            
+
+            return currentNextMove.Value;
         }
 
         #endregion
@@ -169,52 +218,55 @@ namespace Connect_Games.DomainModels.AI
                                                                                             PlayerId,
                                                                                             currentMoves,
                                                                                             _gameType);
-            // can we find a sequence where we win
-            foreach (var existingGameHistory in existingGameHistories.OrderBy(x => Guid.NewGuid()))
+
+            // if not, are we on a sequence in which we have lost before and if so
+            // can we make a different move
+            foreach (var existingGameHistory in existingGameHistories)
             {
                 // Confirm that we got back a sequence and that it is long enough to get
                 // the next move.
                 if (existingGameHistory != null && existingGameHistory.Moves != null &&
                     existingGameHistory.Moves.Count > currentMoves.Count &&
-                    (_computerPlayerIndex % 2) != (existingGameHistory.Moves.Count % 2))
+                    (_computerPlayerIndex % 2) == (existingGameHistory.Moves.Count % 2))
                 {
-                    nextMove = existingGameHistory.Moves[currentMoves.Count];
-                    break;
-                }
-            }
-
-            if (nextMove == null)
-            {
-                // if not, are we on a sequence in which we have lost before and if so
-                // can we make a different move
-                foreach (var existingGameHistory in existingGameHistories)
-                {
-                    // Confirm that we got back a sequence and that it is long enough to get
-                    // the next move.
-                    if (existingGameHistory != null && existingGameHistory.Moves != null &&
-                        existingGameHistory.Moves.Count > currentMoves.Count &&
-                        (_computerPlayerIndex % 2) == (existingGameHistory.Moves.Count % 2))
+                    if (availableMoves.Count() > 1)
                     {
-                        if (availableMoves.Count() > 1)
+                        foreach (var availableMove in availableMoves)
                         {
-                            foreach (var availableMove in availableMoves)
+                            if (availableMove != existingGameHistory.Moves[currentMoves.Count])
                             {
-                                if (availableMove != existingGameHistory.Moves[currentMoves.Count])
-                                {
-                                    nextMove = availableMove;
-                                    break;
-                                }
-                            }
-
-                            if (nextMove != null)
-                            {
+                                nextMove = availableMove;
                                 break;
                             }
+                        }
+
+                        if (nextMove != null)
+                        {
+                            break;
                         }
                     }
                 }
             }
 
+
+            if (nextMove == null)
+            {
+                // can we find a sequence where we win
+                foreach (var existingGameHistory in existingGameHistories.OrderBy(x => Guid.NewGuid()))
+                {
+                    // Confirm that we got back a sequence and that it is long enough to get
+                    // the next move.
+                    if (existingGameHistory != null && existingGameHistory.Moves != null &&
+                        existingGameHistory.Moves.Count > currentMoves.Count &&
+                        (_computerPlayerIndex % 2) != (existingGameHistory.Moves.Count % 2))
+                    {
+                        nextMove = existingGameHistory.Moves[currentMoves.Count];
+                        break;
+                    }
+                }
+
+            }
+        
             return nextMove;
         }
 
