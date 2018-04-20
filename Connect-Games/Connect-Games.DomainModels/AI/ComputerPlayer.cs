@@ -221,34 +221,17 @@ namespace Connect_Games.DomainModels.AI
 
             // if not, are we on a sequence in which we have lost before and if so
             // can we make a different move
-            foreach (var existingGameHistory in existingGameHistories)
+
+            var possibleMoves = existingGameHistories.Where(g => g != null && g.Moves != null &&
+                    g.Moves.Count > currentMoves.Count &&
+                    (_computerPlayerIndex % 2) == (g.Moves.Count % 2) &&
+                    !availableMoves.Contains(g.Moves[currentMoves.Count])).FirstOrDefault();
+
+            if(possibleMoves != null)
             {
-                // Confirm that we got back a sequence and that it is long enough to get
-                // the next move.
-                if (existingGameHistory != null && existingGameHistory.Moves != null &&
-                    existingGameHistory.Moves.Count > currentMoves.Count &&
-                    (_computerPlayerIndex % 2) == (existingGameHistory.Moves.Count % 2))
-                {
-                    if (availableMoves.Count() > 1)
-                    {
-                        foreach (var availableMove in availableMoves)
-                        {
-                            if (availableMove != existingGameHistory.Moves[currentMoves.Count])
-                            {
-                                nextMove = availableMove;
-                                break;
-                            }
-                        }
-
-                        if (nextMove != null)
-                        {
-                            break;
-                        }
-                    }
-                }
+                nextMove = possibleMoves.Moves[currentMoves.Count];
             }
-
-
+            
             if (nextMove == null)
             {
                 // can we find a sequence where we win
